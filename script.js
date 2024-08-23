@@ -1,3 +1,12 @@
+const cnpjInput = document.getElementById('cnpjInput');
+
+cnpjInput.addEventListener('input', function () {
+  this.value = this.value.replace(/\D/g, '');
+  if (this.value.length > 14) {
+    this.value = this.value.slice(0, 14);
+  }
+});
+
 document.getElementById('searchButton').addEventListener('click', function() {
   const cnpjInput = document.getElementById('cnpjInput');
   const cnpj = cnpjInput.value.trim();
@@ -37,3 +46,48 @@ document.getElementById('searchButton').addEventListener('click', function() {
 
   cnpjInput.value = '';
 });
+
+document.getElementById('editButton').addEventListener('click', function() {
+  const resultsDiv = document.getElementById('results');
+  const spans = resultsDiv.querySelectorAll('span');
+  const inputs = resultsDiv.querySelectorAll('input');
+
+  if (inputs.length === 0) {
+    spans.forEach(span => {
+      const text = span.textContent;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'form-control';
+      input.value = text;
+      input.style.width = '100%';
+      input.style.marginTop = '5px';
+      
+      // Preserve the original ID of the span
+      input.id = span.id;
+
+      span.replaceWith(input);
+    });
+  } else {
+    inputs.forEach(input => {
+      const span = document.createElement('span');
+      span.textContent = input.value;
+      span.id = input.id;
+
+      input.replaceWith(span);
+    });
+  }
+});
+
+function revertEditableFields() {
+  const resultsDiv = document.getElementById('results');
+  const inputs = resultsDiv.querySelectorAll('input');
+
+  if (inputs.length > 0) {
+    inputs.forEach(input => {
+      const span = document.createElement('span');
+      span.textContent = input.value;
+      span.id = input.id;
+      input.replaceWith(span);
+    });
+  }
+}
