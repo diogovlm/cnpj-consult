@@ -1,15 +1,21 @@
 #partners-container {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-around;
+  justify-content: space-between;
   gap: 16px;
   margin-top: 16px;
+}
+
+@media (max-width: 550px) {
+  #partners-container {
+    justify-content: center;
+  }
 }
 
 .partner-card {
   border: 1px solid #ccc;
   padding: 16px;
-  margin: 8px;
+  margin: 8px 0;
   border-radius: 12px;
   background-color: #f9f9f9;
   display: flex;
@@ -22,8 +28,8 @@
 }
 
 .partner-avatar {
-  width: 100px;
-  height: 100px;
+  width: 150px;
+  height: 150px;
   border-radius: 50%;
   margin: 16px 0;
   object-fit: cover;
@@ -36,5 +42,6 @@
 
 .partner-card p {
   margin: 8px 0 0;
-  font-size: 1em;
+  font-size: 1.2em;
+  font-weight: 600;
 }
