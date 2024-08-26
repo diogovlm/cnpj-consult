@@ -50,9 +50,17 @@ function populateCompanyDetails(data) {
   document.getElementById('companyStatus').textContent = data.descricao_situacao_cadastral;
   document.getElementById('companyActivity').textContent = data.cnae_fiscal_descricao;
   document.getElementById('companyAddress').textContent = `${data.logradouro}, ${data.numero}, ${data.bairro}, ${data.municipio} - ${data.uf}, ${data.cep}`;
-  document.getElementById('companyPhone').textContent = data.ddd_telefone_1 || "Telefone não disponível";
+
+  const phoneElement = document.getElementById('companyPhone');
+  phoneElement.textContent = data.ddd_telefone_1 || "Telefone não disponível";
+
+  if (phoneElement.textContent !== "Telefone não disponível") {
+    formatPhoneNumber({ target: phoneElement });
+  }
+
   document.getElementById('companyEmail').textContent = data.email || "E-mail não disponível";
 }
+
 
 function displayPartners(partners) {
   const partnersContainer = document.getElementById('partners-container');
@@ -83,7 +91,7 @@ function makeFieldsEditable(spans) {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'form-control';
-    input.value = span.textContent;;
+    input.value = span.textContent;
     input.style.width = '100%';
     input.style.marginTop = '5px';
     input.id = span.id;
@@ -91,8 +99,8 @@ function makeFieldsEditable(spans) {
     span.replaceWith(input);
   });
 
-  formatPhoneNumber();
-  
+  initiatePhoneListener();
+
   document.getElementById('editButton').style.display = 'none';
   document.getElementById('submitButton').style.display = 'block';
 }
@@ -123,28 +131,35 @@ function setPlaneFields() {
   }
 }
 
-function formatPhoneNumber() {
-  document.getElementById('companyPhone').addEventListener('input', function (e) {
-    let x = e.target.value.replace(/\D/g, ''); // Remove all non-digit characters
-
-    if (x.length > 11) {
-      x = x.slice(0, 11); // Limit to 11 digits
-    }
-
-    if (x.length > 2) {
-      x = x.replace(/^(\d{2})(\d)/, '($1) $2'); // Format the area code
-    }
-
-    if (x.length > 5) {
-      x = x.replace(/(\d{4})(\d{4})$/, '$1-$2'); // Format as 8-digit number
-    }
-
-    else if (x.length > 6) {
-      x = x.replace(/(\d{5})(\d{4})$/, '$1-$2'); // Format as 9-digit number
-    }
-
-    e.target.value = x; // Set the formatted value back to the input field
+function initiatePhoneListener() {
+  document.getElementById('companyPhone').addEventListener('input', function(e) {
+    formatPhoneNumber(e)
   });
+}
+
+function formatPhoneNumber(e) {
+  let x;
+  const isAnInput = e.target.tagName === 'INPUT'
+
+  isAnInput ? x = e.target.value.replace(/\D/g, '') : x = e.target.textContent.replace(/\D/g, '') // Clear the string to only numbers
+
+  if (x.length > 11) {
+    x = x.slice(0, 11); // Limit to 11 digits
+  }
+
+  if (x.length > 2) {
+    x = x.replace(/^(\d{2})(\d)/, '($1) $2'); // Format the area code
+  }
+
+  if (x.length > 6) {
+    x = x.replace(/(\d{4})(\d{4})$/, '$1-$2'); // Format as 8-digit number (XXXX-XXXX)
+  }
+
+  else if (x.length > 7) {
+    x = x.replace(/(\d{5})(\d{4})$/, '$1-$2'); // Format as 9-digit number (XXXXX-XXXX)
+  }
+
+  isAnInput ? e.target.value = x : e.target.textContent = x
 }
 
 function handleSubmitButton() {
@@ -163,34 +178,40 @@ function handleSubmitButton() {
   };
 
   inputs.forEach(input => {
+    let value = input.value;
+
+    if (input.id === 'companyPhone') {
+      value = value.replace(/\D/g, '');
+    }
+
     switch (input.id) {
       case 'companyName':
-        editedData.companyName = input.value;
+        editedData.companyName = value;
         break;
       case 'companyLegalName':
-        editedData.companyLegalName = input.value;
+        editedData.companyLegalName = value;
         break;
       case 'companyOpeningDate':
-        editedData.companyOpeningDate = input.value;
+        editedData.companyOpeningDate = value;
         break;
       case 'companyStatus':
-        editedData.companyStatus = input.value;
+        editedData.companyStatus = value;
         break;
       case 'companyActivity':
-        editedData.companyActivity = input.value;
+        editedData.companyActivity = value;
         break;
       case 'companyAddress':
-        editedData.companyAddress = input.value;
+        editedData.companyAddress = value;
         break;
       case 'companyPhone':
-        editedData.companyPhone = input.value;
+        editedData.companyPhone = value;
         break;
       case 'companyEmail':
-        editedData.companyEmail = input.value;
+        editedData.companyEmail = value;
         break;
     }
   });
-
+  
   console.log(editedData);
   setPlaneFields();
 }
