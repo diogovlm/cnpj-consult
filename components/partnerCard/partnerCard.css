@@ -25,6 +25,7 @@
   max-width: 250px;
   text-align: center;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  height: 100%;
 }
 
 .partner-avatar {
@@ -38,10 +39,19 @@
 .partner-card h3 {
   margin: 0;
   font-size: 1.2em;
+  min-height: 2.4em;
+  line-height: 1.2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .partner-card p {
   margin: 8px 0 0;
-  font-size: 1.2em;
+  font-size: 1em;
   font-weight: 600;
+  min-height: 1.2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
