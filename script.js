@@ -1,15 +1,16 @@
 import { createPartnerCard } from './components/partnerCard/partnerCard.js';
 
-const cnpjInput = document.getElementById('cnpjInput');
+function handleCNPJInput() {
+  const cnpjInput = document.getElementById('cnpjInput');
+  cnpjInput.addEventListener('input', function () {
+    this.value = this.value.replace(/\D/g, '');
+    if (this.value.length > 14) {
+      this.value = this.value.slice(0, 14);
+    }
+  });
+}
 
-cnpjInput.addEventListener('input', function () {
-  this.value = this.value.replace(/\D/g, '');
-  if (this.value.length > 14) {
-    this.value = this.value.slice(0, 14);
-  }
-});
-
-document.getElementById('searchButton').addEventListener('click', function() {
+function searchCNPJ() {
   const cnpjInput = document.getElementById('cnpjInput');
   const cnpj = cnpjInput.value.trim();
 
@@ -19,7 +20,7 @@ document.getElementById('searchButton').addEventListener('click', function() {
   }
 
   if (document.getElementById('results').style.display === 'block') {
-    revertEditableFields();
+    setPlaneFields();
   }
 
   fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`)
@@ -30,17 +31,8 @@ document.getElementById('searchButton').addEventListener('click', function() {
       return response.json();
     })
     .then(data => {
-      document.getElementById('companyName').textContent = data.nome_fantasia || "Nome Fantasia não disponível";
-      document.getElementById('companyLegalName').textContent = data.razao_social;
-      document.getElementById('companyOpeningDate').textContent = data.data_inicio_atividade;
-      document.getElementById('companyStatus').textContent = data.descricao_situacao_cadastral;
-      document.getElementById('companyActivity').textContent = data.cnae_fiscal_descricao;
-      document.getElementById('companyAddress').textContent = `${data.logradouro}, ${data.numero}, ${data.bairro}, ${data.municipio} - ${data.uf}, ${data.cep}`;
-      document.getElementById('companyPhone').textContent = data.ddd_telefone_1 || "Telefone não disponível";
-      document.getElementById('companyEmail').textContent = data.email || "E-mail não disponível";
-
-      displayPartners(data.qsa)
-
+      populateCompanyDetails(data);
+      displayPartners(data.qsa);
       document.getElementById('results').style.display = 'block';
     })
     .catch(error => {
@@ -49,46 +41,100 @@ document.getElementById('searchButton').addEventListener('click', function() {
     });
 
   cnpjInput.value = '';
-});
-document.getElementById('editButton').addEventListener('click', function() {
+}
+
+function populateCompanyDetails(data) {
+  document.getElementById('companyName').textContent = data.nome_fantasia || "Nome Fantasia não disponível";
+  document.getElementById('companyLegalName').textContent = data.razao_social;
+  document.getElementById('companyOpeningDate').textContent = data.data_inicio_atividade;
+  document.getElementById('companyStatus').textContent = data.descricao_situacao_cadastral;
+  document.getElementById('companyActivity').textContent = data.cnae_fiscal_descricao;
+  document.getElementById('companyAddress').textContent = `${data.logradouro}, ${data.numero}, ${data.bairro}, ${data.municipio} - ${data.uf}, ${data.cep}`;
+  document.getElementById('companyPhone').textContent = data.ddd_telefone_1 || "Telefone não disponível";
+  document.getElementById('companyEmail').textContent = data.email || "E-mail não disponível";
+}
+
+function displayPartners(partners) {
+  const partnersContainer = document.getElementById('partners-container');
+  partnersContainer.innerHTML = '';
+  partners.forEach(partner => {
+    const card = createPartnerCard(partner);
+    partnersContainer.appendChild(card);
+  });
+}
+
+function toggleEditableFields() {
   const resultsDiv = document.getElementById('results');
   const spans = resultsDiv.querySelectorAll('span');
+  makeFieldsEditable(spans);
+}
+
+function makeFieldsEditable(spans) {
+  const companyNameElement = document.getElementById('companyName');
+  const companyNameText = companyNameElement.textContent;
+
+  const companyNameInputContainer = document.createElement('p');
+  companyNameInputContainer.className = 'card-text';
+  companyNameInputContainer.innerHTML = `<strong>Nome:</strong> <input type="text" class="form-control" id="companyName" value="${companyNameText}" style="width: 100%; margin-top: 5px;">`;
+
+  companyNameElement.parentElement.replaceChild(companyNameInputContainer, companyNameElement);
+
+  spans.forEach(span => {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control';
+    input.value = span.textContent;;
+    input.style.width = '100%';
+    input.style.marginTop = '5px';
+    input.id = span.id;
+
+    span.replaceWith(input);
+  });
+
+  document.getElementById('editButton').style.display = 'none';
+  document.getElementById('submitButton').style.display = 'block';
+}
+
+function setPlaneFields() {
+  const resultsDiv = document.getElementById('results');
   const inputs = resultsDiv.querySelectorAll('input');
 
-  if (inputs.length === 0) {
-    spans.forEach(span => {
-      const text = span.textContent;
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.className = 'form-control';
-      input.value = text;
-      input.style.width = '100%';
-      input.style.marginTop = '5px';
-      input.id = span.id;
-
-      span.replaceWith(input);
-    });
-
-    document.getElementById('submitButton').style.display = 'block';
-  } else {
+  if (inputs.length > 0) {
     inputs.forEach(input => {
-      const span = document.createElement('span');
-      span.textContent = input.value;
-      span.id = input.id;
+      if (input.id === 'companyName') {
+        const companyNameElement = document.createElement('h2');
+        companyNameElement.className = 'card-title';
+        companyNameElement.id = 'companyName';
+        companyNameElement.textContent = input.value;
 
-      input.replaceWith(span);
+        input.parentElement.replaceWith(companyNameElement);
+      } else {
+        const span = document.createElement('span');
+        span.textContent = input.value;
+        span.id = input.id;
+        input.replaceWith(span);
+      }
     });
 
     document.getElementById('submitButton').style.display = 'none';
+    document.getElementById('editButton').style.display = 'block';
   }
-});
+}
 
-document.getElementById('submitButton').addEventListener('click', function() {
+
+function formatPhoneNumber() {
+  document.getElementById('companyPhone').addEventListener('input', function (e) {
+    let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
+    e.target.value = !x[2] ? x[1] : '(' + x[1] + ')' + x[2] + (x[3] ? '-' + x[3] : '');
+  });
+}
+
+function handleSubmitButton() {
   const resultsDiv = document.getElementById('results');
   const inputs = resultsDiv.querySelectorAll('input');
 
   const editedData = {
-    companyName: document.getElementById('companyName').textContent,
+    companyName: '',
     companyLegalName: '',
     companyOpeningDate: '',
     companyStatus: '',
@@ -100,6 +146,9 @@ document.getElementById('submitButton').addEventListener('click', function() {
 
   inputs.forEach(input => {
     switch (input.id) {
+      case 'companyName':
+        editedData.companyName = input.value;
+        break;
       case 'companyLegalName':
         editedData.companyLegalName = input.value;
         break;
@@ -124,33 +173,17 @@ document.getElementById('submitButton').addEventListener('click', function() {
     }
   });
 
-  //The next line is only to show the new information because there is no endpoint to update the information
   console.log(editedData);
-
-  revertEditableFields();
-});
-
-function revertEditableFields() {
-  const resultsDiv = document.getElementById('results');
-  const inputs = resultsDiv.querySelectorAll('input');
-
-  if (inputs.length > 0) {
-    inputs.forEach(input => {
-      const span = document.createElement('span');
-      span.textContent = input.value;
-      span.id = input.id;
-      input.replaceWith(span);
-    });
-
-    document.getElementById('submitButton').style.display = 'none';
-  }
+  setPlaneFields();
 }
 
-function displayPartners(partners) {
-  const partnersContainer = document.getElementById('partners-container');
-  partnersContainer.innerHTML = '';
-  partners.forEach(partner => {
-    const card = createPartnerCard(partner);
-    partnersContainer.appendChild(card);
-  });
+function initializeEventListeners() {
+  handleCNPJInput();
+  formatPhoneNumber();
+
+  document.getElementById('searchButton').addEventListener('click', searchCNPJ);
+  document.getElementById('editButton').addEventListener('click', toggleEditableFields);
+  document.getElementById('submitButton').addEventListener('click', handleSubmitButton);
 }
+
+document.addEventListener('DOMContentLoaded', initializeEventListeners);
