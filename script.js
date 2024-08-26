@@ -91,6 +91,8 @@ function makeFieldsEditable(spans) {
     span.replaceWith(input);
   });
 
+  formatPhoneNumber();
+  
   document.getElementById('editButton').style.display = 'none';
   document.getElementById('submitButton').style.display = 'block';
 }
@@ -121,11 +123,27 @@ function setPlaneFields() {
   }
 }
 
-
 function formatPhoneNumber() {
   document.getElementById('companyPhone').addEventListener('input', function (e) {
-    let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
-    e.target.value = !x[2] ? x[1] : '(' + x[1] + ')' + x[2] + (x[3] ? '-' + x[3] : '');
+    let x = e.target.value.replace(/\D/g, ''); // Remove all non-digit characters
+
+    if (x.length > 11) {
+      x = x.slice(0, 11); // Limit to 11 digits
+    }
+
+    if (x.length > 2) {
+      x = x.replace(/^(\d{2})(\d)/, '($1) $2'); // Format the area code
+    }
+
+    if (x.length > 5) {
+      x = x.replace(/(\d{4})(\d{4})$/, '$1-$2'); // Format as 8-digit number
+    }
+
+    else if (x.length > 6) {
+      x = x.replace(/(\d{5})(\d{4})$/, '$1-$2'); // Format as 9-digit number
+    }
+
+    e.target.value = x; // Set the formatted value back to the input field
   });
 }
 
@@ -179,7 +197,6 @@ function handleSubmitButton() {
 
 function initializeEventListeners() {
   handleCNPJInput();
-  formatPhoneNumber();
 
   document.getElementById('searchButton').addEventListener('click', searchCNPJ);
   document.getElementById('editButton').addEventListener('click', toggleEditableFields);
