@@ -20,6 +20,13 @@ function handleCNPJInput() {
 
     this.value = pastedData.slice(0, 14);
   });
+
+  cnpjInput.addEventListener('keypress', function (event) {
+    if (event.key === 'Enter') {
+      event.preventDefault(); 
+      searchCNPJ();
+    }
+  });
 }
 
 
@@ -27,6 +34,20 @@ function displayError(message) {
   const errorMessage = document.getElementById('errorMessage');
   errorMessage.textContent = message;
   errorMessage.style.display = 'block';
+}
+
+function hideError() {
+  const errorMessage = document.getElementById('errorMessage');
+  errorMessage.style.display = 'none';
+}
+
+function displayLoading(show) {
+  const loadingMessage = document.getElementById('loadingMessage');
+  loadingMessage.style.display = show ? 'block' : 'none';
+
+  if (show) {
+    hideError();
+  }
 }
 
 async function searchCNPJ() {
@@ -42,6 +63,8 @@ async function searchCNPJ() {
     setPlaneFields();
   }
 
+  displayLoading(true);
+
   try {
     const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
     if (!response.ok) {
@@ -55,6 +78,8 @@ async function searchCNPJ() {
     errorMessage.style.display = 'none'; // Hide error message on success
   } catch (error) {
     displayError(error.message);
+  } finally {
+    displayLoading(false);
   }
 
   cnpjInput.value = '';
@@ -138,14 +163,14 @@ function makeFieldsEditable(spans) {
 
     if (span.id === 'companyAddress') {
       const [logradouro, numero, bairro, municipioUf, cep] = span.textContent.split(', ');
-      const [municipio, state] = municipioUf.split(' - ');
+      const [municipio, uf] = municipioUf.split(' - ');
 
       span.parentElement.innerHTML = `
         <p class="card-text"><strong>Logradouro:</strong> <input type="text" class="form-control" id="companyLogradouro" value="${logradouro}" style="width: 100%; margin-top: 5px;"></p>
         <p class="card-text"><strong>Número:</strong> <input type="text" class="form-control" id="companyNumero" value="${numero}" style="width: 100%; margin-top: 5px;"></p>
         <p class="card-text"><strong>Bairro:</strong> <input type="text" class="form-control" id="companyBairro" value="${bairro}" style="width: 100%; margin-top: 5px;"></p>
         <p class="card-text"><strong>Município:</strong> <input type="text" class="form-control" id="companyMunicipio" value="${municipio}" style="width: 100%; margin-top: 5px;"></p>
-        <p class="card-text"><strong>UF:</strong> <input type="text" class="form-control" id="companyUf" value="${state}" style="width: 100%; margin-top: 5px;"></p>
+        <p class="card-text"><strong>UF:</strong> <input type="text" class="form-control" id="companyUf" value="${uf}" style="width: 100%; margin-top: 5px;"></p>
         <p class="card-text"><strong>CEP:</strong> <input type="text" class="form-control" id="companyCep" value="${cep}" style="width: 100%; margin-top: 5px;"></p>
       `;
     } else {
