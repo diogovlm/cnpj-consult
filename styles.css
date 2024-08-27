@@ -4,26 +4,38 @@ body {
   color: #333;
   margin: 0;
   padding: 0;
+  line-height: 1.6;
 }
 
 header {
   margin-bottom: 20px;
+  text-align: center;
 }
 
 header h1 {
   font-size: 2.5rem;
   font-weight: 700;
   color: #343a40;
+  margin-bottom: 10px;
 }
 
 header p.lead {
   font-size: 1.25rem;
   color: #6c757d;
+  margin-bottom: 20px;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
 .card {
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+  margin-bottom: 20px;
 }
 
 .card-body {
@@ -31,25 +43,41 @@ header p.lead {
 }
 
 .input-group {
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
 
 #cnpjInput {
   border-radius: 4px;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 1rem;
+  padding: 10px;
 }
 
 #searchButton {
   border-radius: 4px;
+  background-color: #007bff;
+  color: #fff;
+  padding: 10px 20px;
+  border: none;
+  transition: background-color 0.3s ease;
+}
+
+#searchButton:hover {
+  background-color: #0056b3;
 }
 
 #cnpjHelp {
   font-size: 0.9rem;
   color: #6c757d;
+  margin-top: -8px;
 }
 
 #results {
   margin-top: 30px;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .card-title {
@@ -62,14 +90,38 @@ header p.lead {
   font-size: 1rem;
   color: #495057;
   margin-bottom: 10px;
+  line-height: 1.4;
 }
 
 #editButton {
   font-size: 1.25rem;
+  background-color: transparent;
+  border: none;
+  color: #007bff;
+  transition: color 0.3s ease;
+}
+
+#editButton:hover {
+  color: #0056b3;
 }
 
 #submitButton {
-  width: 100%;
+  width: 60%;
+  padding: 10px 20px;
+  font-size: 1rem;
+  border-radius: 10px;
+  background-color: #0056b3;
+  color: #fff;
+  border: 2px solid #0056b3;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  margin: 0 auto;
+  display: block;
+}
+
+#submitButton:hover {
+  background-color: #0d6ad4;
+  color: #fff;
+  border-color: #0056b3;
 }
 
 #partners-container {
@@ -91,5 +143,6 @@ header p.lead {
 
   #submitButton {
     font-size: 1rem;
+    width: 80%; /* Increase width on smaller screens for better usability */
   }
 }
