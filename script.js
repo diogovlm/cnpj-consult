@@ -2,24 +2,37 @@ import { createPartnerCard } from './components/partnerCard/partnerCard.js';
 
 const CNPJ_LENGTH = 14;
 
+/* ----------------- Event Handling Functions ----------------- */
+
+/**
+ * Initializes event listeners for CNPJ input field.
+ */
 function handleCNPJInput() {
   const cnpjInput = document.getElementById('cnpjInput');
-
   cnpjInput.addEventListener('input', handleCNPJInputEvent);
   cnpjInput.addEventListener('paste', handleCNPJPasteEvent);
   cnpjInput.addEventListener('keypress', handleCNPJKeyPressEvent);
 }
 
+/**
+ * Handles input event for CNPJ field, limiting input to valid CNPJ format.
+ */
 function handleCNPJInputEvent() {
   this.value = limitCNPJInput(this.value);
 }
 
+/**
+ * Handles paste event for CNPJ field, ensuring pasted content is in valid CNPJ format.
+ */
 function handleCNPJPasteEvent(event) {
   event.preventDefault();
   let pastedData = (event.clipboardData || window.clipboardData).getData('Text');
   this.value = limitCNPJInput(pastedData);
 }
 
+/**
+ * Handles keypress event for CNPJ field, triggering search on Enter key press.
+ */
 function handleCNPJKeyPressEvent(event) {
   if (event.key === 'Enter') {
     event.preventDefault();
@@ -27,10 +40,26 @@ function handleCNPJKeyPressEvent(event) {
   }
 }
 
+/* ----------------- Utility Functions ----------------- */
+
+/**
+ * Limits input to valid CNPJ format (14 digits).
+ */
 function limitCNPJInput(value) {
   return value.replace(/\D/g, '').slice(0, CNPJ_LENGTH);
 }
 
+/**
+ * Toggles visibility of an HTML element by its ID.
+ */
+function toggleElementVisibility(elementId, show) {
+  const element = document.getElementById(elementId);
+  element.style.display = show ? 'block' : 'none';
+}
+
+/**
+ * Displays an error message if provided, otherwise hides the error message element.
+ */
 function toggleError(message = null) {
   toggleElementVisibility('errorMessage', !!message);
   if (message) {
@@ -39,16 +68,54 @@ function toggleError(message = null) {
   }
 }
 
+/**
+ * Displays or hides the loading message.
+ */
 function displayLoading(show) {
   toggleElementVisibility('loadingMessage', show);
   if (show) toggleError(); // Hide any existing error messages while loading
 }
 
-function toggleElementVisibility(elementId, show) {
-  const element = document.getElementById(elementId);
-  element.style.display = show ? 'block' : 'none';
+/**
+ * Validates whether the given CNPJ is the correct length.
+ */
+function isCNPJValid(cnpj) {
+  return cnpj.length === CNPJ_LENGTH;
 }
 
+/**
+ * Checks if the results section is currently visible.
+ */
+function isResultsVisible() {
+  return document.getElementById('results').style.display === 'block';
+}
+
+/**
+ * Clears the CNPJ input field.
+ */
+function clearCNPJInput(cnpjInput) {
+  cnpjInput.value = '';
+}
+
+/* ----------------- Data Fetching Functions ----------------- */
+
+/**
+ * Fetches company data from Brasil API using the provided CNPJ.
+ */
+async function fetchCNPJData(cnpj) {
+  const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Erro na consulta do CNPJ');
+  }
+  return response.json();
+}
+
+/* ----------------- Main Function: Search and Display ----------------- */
+
+/**
+ * Initiates a CNPJ search, fetches company data, and displays it.
+ */
 async function searchCNPJ() {
   resetResults();
 
@@ -81,29 +148,20 @@ async function searchCNPJ() {
   clearCNPJInput(cnpjInput);
 }
 
-function isCNPJValid(cnpj) {
-  return cnpj.length === CNPJ_LENGTH;
-}
+/* ----------------- Reset and Conversion Functions ----------------- */
 
-function isResultsVisible() {
-  return document.getElementById('results').style.display === 'block';
-}
-
-async function fetchCNPJData(cnpj) {
-  const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Erro na consulta do CNPJ');
-  }
-  return response.json();
-}
-
+/**
+ * Resets the results section, converting any inputs back to spans.
+ */
 function resetResults() {
   convertInputsToSpans();
   toggleElementVisibility('submitButton', false);
   toggleElementVisibility('editButton', true);
 }
 
+/**
+ * Converts all input fields within the results section back to span elements.
+ */
 function convertInputsToSpans() {
   const inputs = document.querySelectorAll('#results input');
   if (inputs.length !== 0) {
@@ -113,6 +171,30 @@ function convertInputsToSpans() {
   }
 }
 
+/* ----------------- Data Manipulation and Formatting Functions ----------------- */
+
+/**
+ * Extracts form data from input fields.
+ */
+function extractFormData(inputs) {
+  let formData = {};
+
+  inputs.forEach(input => {
+    let value = input.value;
+    if (input.id === 'companyPhone') {
+      value = value.replace(/\D/g, '');
+    }
+    formData[input.id] = value;
+  });
+
+  formData.companyAddress = `${formData.companyLogradouro}, ${formData.companyNumero}, ${formData.companyBairro}, ${formData.companyMunicipio} - ${formData.companyUf}, ${formData.companyCep}`;
+
+  return formData;
+}
+
+/**
+ * Populates company details in the results section.
+ */
 function populateCompanyDetails(data) {
   setContent('companyName', data.nome_fantasia || "Nome Fantasia não disponível");
   setContent('companyLegalName', data.razao_social);
@@ -124,15 +206,24 @@ function populateCompanyDetails(data) {
   setContent('companyEmail', data.email || "E-mail não disponível");
 }
 
+/**
+ * Sets the content of a specified HTML element.
+ */
 function setContent(elementId, content, formatter = null) {
   const element = document.getElementById(elementId);
   element.textContent = formatter ? formatter(content) : content;
 }
 
+/**
+ * Formats an address object into a readable string.
+ */
 function formatAddress(data) {
   return `${data.logradouro}, ${data.numero}, ${data.bairro}, ${data.municipio} - ${data.uf}, ${data.cep}`;
 }
 
+/**
+ * Formats a phone number string into a readable format.
+ */
 function formatPhoneNumber(phoneNumber) {
   let x = phoneNumber.replace(/\D/g, '');
   if (x.length > 11) x = x.slice(0, 11);
@@ -142,6 +233,11 @@ function formatPhoneNumber(phoneNumber) {
   return x;
 }
 
+/* ----------------- Partner Display and Editable Fields ----------------- */
+
+/**
+ * Displays the partners associated with the company.
+ */
 function displayPartners(partners) {
   const partnersContainer = document.getElementById('partners-container');
   partnersContainer.innerHTML = '';
@@ -151,11 +247,17 @@ function displayPartners(partners) {
   });
 }
 
+/**
+ * Toggles the fields in the results section to be editable.
+ */
 function toggleEditableFields() {
   const spans = document.querySelectorAll('#results span');
   makeFieldsEditable(spans);
 }
 
+/**
+ * Converts span elements to editable input fields.
+ */
 function makeFieldsEditable(spans) {
   const companyNameElement = document.getElementById('companyName');
   const companyNameText = companyNameElement.textContent;
@@ -183,6 +285,9 @@ function makeFieldsEditable(spans) {
   toggleElementVisibility('submitButton', true);
 }
 
+/**
+ * Creates an editable input field for a span element.
+ */
 function createEditableInput(span) {
   const input = document.createElement('input');
   input.type = 'text';
@@ -194,6 +299,9 @@ function createEditableInput(span) {
   return input;
 }
 
+/**
+ * Handles the conversion of address spans to editable inputs.
+ */
 function handleAddressInput(span, input) {
   const [logradouro, numero, bairro, municipioUf, cep] = span.textContent.split(', ');
   const [municipio, uf] = municipioUf.split(' - ');
@@ -208,36 +316,11 @@ function handleAddressInput(span, input) {
   `;
 }
 
-function setPlaneFields() {
-  convertInputsToSpans();
-}
+/* ----------------- Address Handling and Data Update ----------------- */
 
-function initiatePhoneListener() {
-  document.getElementById('companyPhone').addEventListener('input', function (e) {
-    e.target.value = formatPhoneNumber(e.target.value);
-  });
-}
-
-function updateEditedData(editedData) {
-  // For now, it is a simple console.log to show the updated data because there isn't an endpoint to send the editedData
-  console.log(editedData);
-}
-
-function handleSubmitButton() {
-  const inputs = document.querySelectorAll('#results input');
-  const editedData = extractFormData(inputs);
-
-  handleAddressElements(editedData);
-  replaceInputsWithSpans(inputs, editedData);
-
-  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-  toggleElementVisibility('submitButton', false);
-  toggleElementVisibility('editButton', true);
-
-  updateEditedData(editedData);
-}
-
+/**
+ * Updates the address elements with the new data.
+ */
 function handleAddressElements(editedData) {
   const addressParent = document.querySelector('#companyLogradouro')?.closest('.card-text')?.parentElement;
   if (addressParent) {
@@ -248,22 +331,9 @@ function handleAddressElements(editedData) {
   }
 }
 
-function extractFormData(inputs) {
-  let formData = {};
-
-  inputs.forEach(input => {
-    let value = input.value;
-    if (input.id === 'companyPhone') {
-      value = value.replace(/\D/g, '');
-    }
-    formData[input.id] = value;
-  });
-
-  formData.companyAddress = `${formData.companyLogradouro}, ${formData.companyNumero}, ${formData.companyBairro}, ${formData.companyMunicipio} - ${formData.companyUf}, ${formData.companyCep}`;
-
-  return formData;
-}
-
+/**
+ * Removes address inputs from the DOM.
+ */
 function removeAddressInputs() {
   ['companyLogradouro', 'companyNumero', 'companyBairro', 'companyMunicipio', 'companyUf', 'companyCep'].forEach(id => {
     const input = document.getElementById(id);
@@ -273,6 +343,9 @@ function removeAddressInputs() {
   });
 }
 
+/**
+ * Updates the address element in the DOM with the provided address.
+ */
 function updateAddressElement(parent, address) {
   const newAddressElement = document.createElement('p');
   newAddressElement.className = 'card-text';
@@ -280,6 +353,9 @@ function updateAddressElement(parent, address) {
   parent.appendChild(newAddressElement);
 }
 
+/**
+ * Replaces input fields with spans containing the updated data.
+ */
 function replaceInputsWithSpans(inputs, data) {
   inputs.forEach(input => {
     const span = document.createElement('span');
@@ -298,10 +374,50 @@ function replaceInputsWithSpans(inputs, data) {
   });
 }
 
-function clearCNPJInput(cnpjInput) {
-  cnpjInput.value = '';
+/**
+ * Updates the data with the newly edited values and logs them.
+ */
+function updateEditedData(editedData) {
+  // For now, it is a simple console.log to show the updated data because there isn't an endpoint to send the editedData
+  console.log(editedData);
 }
 
+/* ----------------- Phone Input Handling ----------------- */
+
+/**
+ * Initiates a listener on the phone input to format the phone number as the user types.
+ */
+function initiatePhoneListener() {
+  document.getElementById('companyPhone').addEventListener('input', function (e) {
+    e.target.value = formatPhoneNumber(e.target.value);
+  });
+}
+
+/* ----------------- Button Handling Functions ----------------- */
+
+/**
+ * Handles the submission of edited data.
+ */
+function handleSubmitButton() {
+  const inputs = document.querySelectorAll('#results input');
+  const editedData = extractFormData(inputs);
+
+  handleAddressElements(editedData);
+  replaceInputsWithSpans(inputs, editedData);
+
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  toggleElementVisibility('submitButton', false);
+  toggleElementVisibility('editButton', true);
+
+  updateEditedData(editedData);
+}
+
+/* ----------------- Initialization ----------------- */
+
+/**
+ * Initializes event listeners when the DOM content is loaded.
+ */
 function initializeEventListeners() {
   handleCNPJInput();
 
