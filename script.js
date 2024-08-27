@@ -1,5 +1,7 @@
 import { createPartnerCard } from './components/partnerCard/partnerCard.js';
 
+const CNPJ_LENGTH = 14;
+
 function handleCNPJInput() {
   const cnpjInput = document.getElementById('cnpjInput');
 
@@ -23,7 +25,7 @@ function handleCNPJInput() {
 
 function limitCNPJInput(value) {
   let result = value.replace(/\D/g, '');
-  result = result.slice(0, 14);
+  result = result.slice(0, CNPJ_LENGTH);
   return result
 }
 
@@ -52,7 +54,7 @@ async function searchCNPJ() {
   const cnpjInput = document.getElementById('cnpjInput');
   const cnpj = cnpjInput.value.trim();
 
-  if (cnpj.length !== 14) {
+  if (cnpj.length !== CNPJ_LENGTH) {
     toggleError('O CNPJ deve conter 14 dígitos.');
     return;
   }
