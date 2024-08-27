@@ -7,7 +7,16 @@ function createPartnerCard(partner) {
   card.appendChild(name);
 
   const avatar = document.createElement('img');
-  avatar.src = '../assets/default-avatar.png';
+  const isGitHubPages = window.location.hostname.includes('github.io');
+  let basePath = '';
+
+  if (isGitHubPages) {
+    const pathArray = window.location.pathname.split('/');
+    const repoName = pathArray[1];
+    basePath = `/${repoName}`;
+  }
+
+  avatar.src = `${basePath}/assets/default-avatar.png`;
   avatar.alt = 'Profile Avatar';
   avatar.className = 'partner-avatar';
   card.appendChild(avatar);
