@@ -6,13 +6,13 @@ function handleCNPJInput() {
   const cnpjInput = document.getElementById('cnpjInput');
 
   cnpjInput.addEventListener('input', function () {
-    this.value = limitCNPJInput(this.value)
+    this.value = limitCNPJInput(this.value);
   });
 
   cnpjInput.addEventListener('paste', function (event) {
     event.preventDefault();
     let pastedData = (event.clipboardData || window.clipboardData).getData('Text');
-    this.value = limitCNPJInput(pastedData)
+    this.value = limitCNPJInput(pastedData);
   });
 
   cnpjInput.addEventListener('keypress', function (event) {
@@ -25,31 +25,32 @@ function handleCNPJInput() {
 
 function limitCNPJInput(value) {
   let result = value.replace(/\D/g, '');
-  result = result.slice(0, CNPJ_LENGTH);
-  return result
+  return result.slice(0, CNPJ_LENGTH);
 }
 
 function toggleError(message = null) {
-  const errorMessage = document.getElementById('errorMessage');
+  toggleElementVisibility('errorMessage', !!message);
   if (message) {
+    const errorMessage = document.getElementById('errorMessage');
     errorMessage.textContent = message;
-    errorMessage.style.display = 'block';
-  } else {
-    errorMessage.style.display = 'none';
   }
 }
 
 function displayLoading(show) {
-  const loadingMessage = document.getElementById('loadingMessage');
-  loadingMessage.style.display = show ? 'block' : 'none';
+  toggleElementVisibility('loadingMessage', show);
 
   if (show) {
-    toggleError();
+    toggleError(); // Hide any existing error messages while loading
   }
 }
 
+function toggleElementVisibility(elementId, show) {
+  const element = document.getElementById(elementId);
+  element.style.display = show ? 'block' : 'none';
+}
+
 async function searchCNPJ() {
-  updateElementsOnNewSearch()
+  resetResults();
 
   const cnpjInput = document.getElementById('cnpjInput');
   const cnpj = cnpjInput.value.trim();
@@ -66,15 +67,10 @@ async function searchCNPJ() {
   displayLoading(true);
 
   try {
-    const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Erro na consulta do CNPJ');
-    }
-    const data = await response.json();
+    const data = await fetchCNPJData(cnpj);
     populateCompanyDetails(data);
     displayPartners(data.qsa);
-    document.getElementById('results').style.display = 'block';
+    toggleElementVisibility('results', true);
     toggleError();
   } catch (error) {
     toggleError(error.message);
@@ -83,6 +79,30 @@ async function searchCNPJ() {
   }
 
   cnpjInput.value = '';
+}
+
+async function fetchCNPJData(cnpj) {
+  const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Erro na consulta do CNPJ');
+  }
+  return response.json();
+}
+
+function resetResults() {
+  convertInputsToSpans();
+  toggleElementVisibility('submitButton', false);
+  toggleElementVisibility('editButton', true);
+}
+
+function convertInputsToSpans() {
+  const inputs = document.querySelectorAll('#results input');
+  if (inputs.length !== 0) {
+    const editedData = extractFormData(inputs);
+    handleAddressElements(editedData);
+    replaceInputsWithSpans(inputs, editedData);
+  }
 }
 
 function populateCompanyDetails(data) {
@@ -135,8 +155,7 @@ function displayPartners(partners) {
 }
 
 function toggleEditableFields() {
-  const resultsDiv = document.getElementById('results');
-  const spans = resultsDiv.querySelectorAll('span');
+  const spans = document.querySelectorAll('#results span');
   makeFieldsEditable(spans);
 }
 
@@ -180,35 +199,12 @@ function makeFieldsEditable(spans) {
 
   initiatePhoneListener();
 
-  document.getElementById('editButton').style.display = 'none';
-  document.getElementById('submitButton').style.display = 'block';
+  toggleElementVisibility('editButton', false);
+  toggleElementVisibility('submitButton', true);
 }
 
 function setPlaneFields() {
-  const resultsDiv = document.getElementById('results');
-  const inputs = resultsDiv.querySelectorAll('input');
-
-  if (inputs.length > 0) {
-    inputs.forEach(input => {
-      if (input.id === 'companyName') {
-        const companyNameElement = document.createElement('h2');
-        companyNameElement.className = 'card-title';
-        companyNameElement.id = 'companyName';
-        companyNameElement.textContent = input.value;
-
-        input.parentElement.replaceWith(companyNameElement);
-      } else {
-        const span = document.createElement('span');
-        span.textContent = input.value;
-        span.id = input.id;
-
-        input.replaceWith(span);
-      }
-    });
-
-    document.getElementById('submitButton').style.display = 'none';
-    document.getElementById('editButton').style.display = 'block';
-  }
+  convertInputsToSpans();
 }
 
 function initiatePhoneListener() {
@@ -216,19 +212,6 @@ function initiatePhoneListener() {
     const formattedPhone = formatPhoneNumber(e.target.value);
     e.target.value = formattedPhone;
   });
-}
-
-function updateElementsOnNewSearch() {
-  const inputs = document.querySelectorAll('#results input');
-  if(inputs.length !== 0) {
-    const editedData = extractFormData(inputs);
-
-    handleAddressElements(editedData)
-    replaceInputsWithSpans(inputs, editedData);
-
-    document.getElementById('submitButton').style.display = 'none';
-    document.getElementById('editButton').style.display = 'block';
-  }
 }
 
 function updateEditedData(editedData) {
@@ -240,14 +223,15 @@ function handleSubmitButton() {
   const inputs = document.querySelectorAll('#results input');
   const editedData = extractFormData(inputs);
 
-  handleAddressElements(editedData)
+  handleAddressElements(editedData);
   replaceInputsWithSpans(inputs, editedData);
 
   document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  document.getElementById('submitButton').style.display = 'none';
-  document.getElementById('editButton').style.display = 'block';
 
-  updateEditedData(editedData)
+  toggleElementVisibility('submitButton', false);
+  toggleElementVisibility('editButton', true);
+
+  updateEditedData(editedData);
 }
 
 function handleAddressElements(editedData) {
@@ -291,7 +275,7 @@ function updateAddressElement(parent, address) {
   const newAddressElement = document.createElement('p');
   newAddressElement.className = 'card-text';
   newAddressElement.innerHTML = `<strong>Endereço Completo:</strong> <span id="companyAddress">${address}</span>`;
-  
+
   parent.appendChild(newAddressElement);
 }
 
