@@ -198,7 +198,7 @@ function extractFormData(inputs) {
 function populateCompanyDetails(data) {
   setContent('companyName', data.nome_fantasia || "Nome Fantasia não disponível");
   setContent('companyLegalName', data.razao_social);
-  setContent('companyOpeningDate', data.data_inicio_atividade);
+  setContent('companyOpeningDate', formatDateForDisplay(data.data_inicio_atividade));
   setContent('companyStatus', data.descricao_situacao_cadastral);
   setContent('companyActivity', data.cnae_fiscal_descricao);
   setContent('companyAddress', data, formatAddress);
@@ -231,6 +231,23 @@ function formatPhoneNumber(phoneNumber) {
   if (x.length > 6) x = x.replace(/(\d{4})(\d{4})$/, '$1-$2');
   else if (x.length > 7) x = x.replace(/(\d{5})(\d{4})$/, '$1-$2');
   return x;
+}
+
+/**
+ * Formats a date string from 'yyyy-mm-dd' to 'dd/mm/yyyy' for display.
+ */
+function formatDateForDisplay(dateString) {
+  const [year, month, day] = dateString.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+/**
+ * Formats a date string from 'dd/mm/yyyy' to 'yyyy-mm-dd' for submission.
+ */
+function formatDateForSubmission(dateString) {
+  console.log(dateString)
+  const [day, month, year] = dateString.split('-');
+  return `${year}-${month}-${day}`;
 }
 
 /* ----------------- Partner Display and Editable Fields ----------------- */
@@ -274,6 +291,10 @@ function makeFieldsEditable(spans) {
     const input = createEditableInput(span);
     if (span.id === 'companyAddress') {
       handleAddressInput(span, input);
+    } else if (span.id === 'companyOpeningDate') {
+      input.type = 'date';
+      input.value = span.textContent.split('/').reverse().join('-'); // Reverse date for date input type
+      span.replaceWith(input);
     } else {
       span.replaceWith(input);
     }
@@ -359,7 +380,13 @@ function updateAddressElement(parent, address) {
 function replaceInputsWithSpans(inputs, data) {
   inputs.forEach(input => {
     const span = document.createElement('span');
-    span.textContent = input.id === 'companyPhone' ? formatPhoneNumber(input.value) : input.value;
+    if (input.id === 'companyPhone') {
+      span.textContent = formatPhoneNumber(input.value);
+    } else if (input.id === 'companyOpeningDate') {
+      span.textContent = input.value.split('-').reverse().join('/'); // Format date back to dd/mm/yyyy
+    } else {
+      span.textContent = input.value;
+    }
     span.id = input.id;
 
     if (input.id === 'companyName') {
