@@ -2,7 +2,7 @@ import { createPartnerCard } from './components/partnerCard/partnerCard.js';
 
 function handleCNPJInput() {
   const cnpjInput = document.getElementById('cnpjInput');
-  
+
   cnpjInput.addEventListener('input', function () {
     this.value = limitCNPJInput(this.value)
   });
@@ -27,16 +27,14 @@ function limitCNPJInput(value) {
   return result
 }
 
-
-function displayError(message) {
+function toggleError(message = null) {
   const errorMessage = document.getElementById('errorMessage');
-  errorMessage.textContent = message;
-  errorMessage.style.display = 'block';
-}
-
-function hideError() {
-  const errorMessage = document.getElementById('errorMessage');
-  errorMessage.style.display = 'none';
+  if (message) {
+    errorMessage.textContent = message;
+    errorMessage.style.display = 'block';
+  } else {
+    errorMessage.style.display = 'none';
+  }
 }
 
 function displayLoading(show) {
@@ -44,16 +42,18 @@ function displayLoading(show) {
   loadingMessage.style.display = show ? 'block' : 'none';
 
   if (show) {
-    hideError();
+    toggleError();
   }
 }
 
 async function searchCNPJ() {
+  updateElementsOnNewSearch()
+
   const cnpjInput = document.getElementById('cnpjInput');
   const cnpj = cnpjInput.value.trim();
 
   if (cnpj.length !== 14) {
-    displayError('O CNPJ deve conter 14 dígitos.');
+    toggleError('O CNPJ deve conter 14 dígitos.');
     return;
   }
 
@@ -73,9 +73,9 @@ async function searchCNPJ() {
     populateCompanyDetails(data);
     displayPartners(data.qsa);
     document.getElementById('results').style.display = 'block';
-    hideError();
+    toggleError();
   } catch (error) {
-    displayError(error.message);
+    toggleError(error.message);
   } finally {
     displayLoading(false);
   }
@@ -216,27 +216,46 @@ function initiatePhoneListener() {
   });
 }
 
+function updateElementsOnNewSearch() {
+  const inputs = document.querySelectorAll('#results input');
+  if(inputs.length !== 0) {
+    const editedData = extractFormData(inputs);
+
+    handleAddressElements(editedData)
+    replaceInputsWithSpans(inputs, editedData);
+
+    document.getElementById('submitButton').style.display = 'none';
+    document.getElementById('editButton').style.display = 'block';
+  }
+}
+
+function updateEditedData(editedData) {
+  // For now, it is a simple console.log to show the updated data because there isn't an endpoint to send the editedData
+  console.log(editedData);
+}
+
 function handleSubmitButton() {
   const inputs = document.querySelectorAll('#results input');
   const editedData = extractFormData(inputs);
 
-  // For now, it is a simple console.log to show the updated data because there isn't an endpoint to send the editedData
-  console.log(editedData);
+  handleAddressElements(editedData)
+  replaceInputsWithSpans(inputs, editedData);
 
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('submitButton').style.display = 'none';
+  document.getElementById('editButton').style.display = 'block';
+
+  updateEditedData(editedData)
+}
+
+function handleAddressElements(editedData) {
   const addressParent = document.querySelector('#companyLogradouro')?.closest('.card-text')?.parentElement;
-
   if (addressParent) {
     removeAddressInputs();
     updateAddressElement(addressParent, editedData.companyAddress);
   } else {
     console.error('Address parent container not found. Cannot replace address fields.');
   }
-
-  replaceInputsWithSpans(inputs, editedData);
-
-  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  document.getElementById('submitButton').style.display = 'none';
-  document.getElementById('editButton').style.display = 'block';
 }
 
 function extractFormData(inputs) {
