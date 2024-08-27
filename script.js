@@ -3,12 +3,25 @@ import { createPartnerCard } from './components/partnerCard/partnerCard.js';
 function handleCNPJInput() {
   const cnpjInput = document.getElementById('cnpjInput');
   cnpjInput.addEventListener('input', function () {
-    this.value = this.value.replace(/\D/g, '');
-    if (this.value.length > 14) {
-      this.value = this.value.slice(0, 14);
+    let cleanValue = this.value.replace(/\D/g, '');
+
+    if (cleanValue.length > 14) {
+      cleanValue = cleanValue.slice(0, 14);
     }
+
+    this.value = cleanValue;
+  });
+
+  cnpjInput.addEventListener('paste', function (event) {
+    event.preventDefault();
+    let pastedData = (event.clipboardData || window.clipboardData).getData('Text');
+
+    pastedData = pastedData.replace(/\D/g, '');
+
+    this.value = pastedData.slice(0, 14);
   });
 }
+
 
 function displayError(message) {
   const errorMessage = document.getElementById('errorMessage');
