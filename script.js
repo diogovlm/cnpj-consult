@@ -198,6 +198,7 @@ function handleSubmitButton() {
 
   replaceInputsWithSpans(inputs, editedData);
 
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
   document.getElementById('submitButton').style.display = 'none';
   document.getElementById('editButton').style.display = 'block';
 }
