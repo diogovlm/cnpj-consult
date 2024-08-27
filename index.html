@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
+  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Consulta de CNPJ</title>
@@ -8,54 +8,53 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="./components/partnerCard/partnerCard.css">
-</head>
-<body>
-  <div class="container my-5">
-  <header class="text-center mb-5">
-    <h1 class="display-4">Consulta de CNPJ</h1>
-    <p class="lead">Insira o CNPJ da empresa para obter as informações.</p>
-  </header>
-  <div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-      <div class="card">
-        <div class="card-body">
-          <div class="input-group">
-            <input type="text" class="form-control" id="cnpjInput" placeholder="Digite o CNPJ" maxlength="14" inputmode="numeric" pattern="[0-9]*">
-            <button class="btn btn-primary" type="button" id="searchButton">Consultar</button>
+  </head>
+
+  <body>
+    <div class="container my-5">
+      <header class="text-center mb-5">
+        <h1 class="display-4">Consulta de CNPJ</h1>
+        <p class="lead">Insira o CNPJ da empresa para obter as informações.</p>
+      </header>
+
+      <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+          <div class="card">
+            <div class="card-body">
+              <div class="input-group">
+                <input type="text" class="form-control" id="cnpjInput" placeholder="Digite o CNPJ" maxlength="14" inputmode="numeric" pattern="[0-9]*">
+                <button class="btn btn-primary" type="button" id="searchButton">Consultar</button>
+              </div>
+              <small id="cnpjHelp" class="form-text text-muted mt-2">
+                O CNPJ deve conter 14 dígitos e apenas números.
+              </small>
+            </div>
           </div>
-          <small id="cnpjHelp" class="form-text text-muted mt-2">
-            O CNPJ deve conter 14 dígitos e apenas números.
-          </small>
         </div>
       </div>
-    </div>
-  </div>
-  <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
-  <div id="results" class="mt-5" style="display: none;">
-    <div class="card">
-      <div class="card-body">
-        <h2 class="card-title" id="companyName"></h2>
-        <p class="card-text"><strong>Razão Social:</strong> <span id="companyLegalName"></span></p>
-        <p class="card-text"><strong>Data de Abertura:</strong> <span id="companyOpeningDate"></span></p>
-        <p class="card-text"><strong>Situação:</strong> <span id="companyStatus"></span></p>
-        <p class="card-text"><strong>Atividade Principal:</strong> <span id="companyActivity"></span></p>
-        <p class="card-text"><strong>Endereço Completo:</strong> <span id="companyAddress"></span></p>
-        <p class="card-text"><strong>Telefone:</strong> <span id="companyPhone"></span></p>
-        <p class="card-text"><strong>E-mail:</strong> <span id="companyEmail"></span></p>
-        <button class="btn btn-light position-absolute top-0 end-0 m-3" id="editButton">
-          <i class="bi bi-pencil"></i>
-        </button>
-        <button class="btn btn-success mt-4" id="submitButton" style="display: none;">Salvar Informações</button>
+
+      <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
+
+      <div id="results" class="mt-5" style="display: none;">
+        <div class="card">
+          <div class="card-body">
+            <h2 class="card-title" id="companyName"></h2>
+            <p class="card-text"><strong>Razão Social:</strong> <span id="companyLegalName"></span></p>
+            <p class="card-text"><strong>Data de Abertura:</strong> <span id="companyOpeningDate"></span></p>
+            <p class="card-text"><strong>Situação:</strong> <span id="companyStatus"></span></p>
+            <p class="card-text"><strong>Atividade Principal:</strong> <span id="companyActivity"></span></p>
+            <p class="card-text"><strong>Endereço Completo:</strong> <span id="companyAddress"></span></p>
+            <p class="card-text"><strong>Telefone:</strong> <span id="companyPhone"></span></p>
+            <p class="card-text"><strong>E-mail:</strong> <span id="companyEmail"></span></p>
+            <button class="btn btn-light position-absolute top-0 end-0 m-3" id="editButton">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-success mt-4" id="submitButton" style="display: none;">Salvar Informações</button>
+          </div>
+        </div>
+        <div id="partners-container"></div>
       </div>
     </div>
-    <div id="partners-container"></div>
-  </div>
-</div>
-
-
-
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
-  <script type="module" src="script.js"></script>
-</body>
+    <script type="module" src="script.js"></script>
+  </body>
 </html>
