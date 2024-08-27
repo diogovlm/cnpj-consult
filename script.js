@@ -218,7 +218,7 @@ function setContent(elementId, content, formatter = null) {
  * Formats an address object into a readable string.
  */
 function formatAddress(data) {
-  return `${data.logradouro}, ${data.numero}, ${data.bairro}, ${data.municipio} - ${data.uf}, ${data.cep}`;
+  return `${data.logradouro}, ${data.numero}, ${data.bairro}, ${data.municipio} - ${data.uf}, ${formarCep(data.cep)}`;
 }
 
 /**
@@ -234,20 +234,22 @@ function formatPhoneNumber(phoneNumber) {
 }
 
 /**
+ * Formats a CEP string into xxxxx-xxx format.
+ */
+function formarCep(cep) {
+  let value = cep.replace(/\D/g, ''); // Remove all non-digit characters
+  if (value.length > 5) {
+    value = value.slice(0, 5) + '-' + value.slice(5, 8); // Apply pattern xxxxx-xxx
+  }
+  return value.slice(0, 9); // Limit CEP to 9 characters
+}
+
+/**
  * Formats a date string from 'yyyy-mm-dd' to 'dd/mm/yyyy' for display.
  */
 function formatDateForDisplay(dateString) {
   const [year, month, day] = dateString.split('-');
   return `${day}/${month}/${year}`;
-}
-
-/**
- * Formats a date string from 'dd/mm/yyyy' to 'yyyy-mm-dd' for submission.
- */
-function formatDateForSubmission(dateString) {
-  console.log(dateString)
-  const [day, month, year] = dateString.split('-');
-  return `${year}-${month}-${day}`;
 }
 
 /* ----------------- Partner Display and Editable Fields ----------------- */
@@ -270,6 +272,7 @@ function displayPartners(partners) {
 function toggleEditableFields() {
   const spans = document.querySelectorAll('#results span');
   makeFieldsEditable(spans);
+  initiateInputListeners();
 }
 
 /**
@@ -299,9 +302,6 @@ function makeFieldsEditable(spans) {
       span.replaceWith(input);
     }
   });
-
-  initiatePhoneListener();
-
   toggleElementVisibility('editButton', false);
   toggleElementVisibility('submitButton', true);
 }
@@ -382,6 +382,8 @@ function replaceInputsWithSpans(inputs, data) {
     const span = document.createElement('span');
     if (input.id === 'companyPhone') {
       span.textContent = formatPhoneNumber(input.value);
+    } else if (input.id === 'companyCep') {
+      span.textContent = formarCep(input.value);
     } else if (input.id === 'companyOpeningDate') {
       span.textContent = input.value.split('-').reverse().join('/'); // Format date back to dd/mm/yyyy
     } else {
@@ -406,18 +408,40 @@ function replaceInputsWithSpans(inputs, data) {
  */
 function updateEditedData(editedData) {
   // For now, it is a simple console.log to show the updated data because there isn't an endpoint to send the editedData
+  // Also I didn't change the key names when submitting because there is no endpoint defining the key names
   console.log(editedData);
 }
 
-/* ----------------- Phone Input Handling ----------------- */
+/* ----------------- Input Handling Functions ----------------- */
 
 /**
- * Initiates a listener on the phone input to format the phone number as the user types.
+ * Initiates a listener on the UF, CEP, and phone inputs to format the inputs as the user types.
  */
-function initiatePhoneListener() {
-  document.getElementById('companyPhone').addEventListener('input', function (e) {
-    e.target.value = formatPhoneNumber(e.target.value);
-  });
+function initiateInputListeners() {
+  document.getElementById('companyPhone').addEventListener('input', handlePhoneInput);
+  document.getElementById('companyUf').addEventListener('input', handleUFInput);
+  document.getElementById('companyCep').addEventListener('input', handleCEPInput);
+}
+
+/**
+ * Handles input for the phone field, formatting the phone number as the user types.
+ */
+function handlePhoneInput(event) {
+  event.target.value = formatPhoneNumber(event.target.value);
+}
+
+/**
+ * Handles input for the UF field, ensuring only uppercase letters are allowed.
+ */
+function handleUFInput(event) {
+  event.target.value = event.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
+}
+
+/**
+ * Handles input for the CEP field, applying the xxxxx-xxx pattern.
+ */
+function handleCEPInput(event) {
+  event.target.value = formarCep(event.target.value);
 }
 
 /* ----------------- Button Handling Functions ----------------- */
