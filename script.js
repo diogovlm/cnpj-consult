@@ -5,27 +5,30 @@ const CNPJ_LENGTH = 14;
 function handleCNPJInput() {
   const cnpjInput = document.getElementById('cnpjInput');
 
-  cnpjInput.addEventListener('input', function () {
-    this.value = limitCNPJInput(this.value);
-  });
+  cnpjInput.addEventListener('input', handleCNPJInputEvent);
+  cnpjInput.addEventListener('paste', handleCNPJPasteEvent);
+  cnpjInput.addEventListener('keypress', handleCNPJKeyPressEvent);
+}
 
-  cnpjInput.addEventListener('paste', function (event) {
+function handleCNPJInputEvent() {
+  this.value = limitCNPJInput(this.value);
+}
+
+function handleCNPJPasteEvent(event) {
+  event.preventDefault();
+  let pastedData = (event.clipboardData || window.clipboardData).getData('Text');
+  this.value = limitCNPJInput(pastedData);
+}
+
+function handleCNPJKeyPressEvent(event) {
+  if (event.key === 'Enter') {
     event.preventDefault();
-    let pastedData = (event.clipboardData || window.clipboardData).getData('Text');
-    this.value = limitCNPJInput(pastedData);
-  });
-
-  cnpjInput.addEventListener('keypress', function (event) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      searchCNPJ();
-    }
-  });
+    searchCNPJ();
+  }
 }
 
 function limitCNPJInput(value) {
-  let result = value.replace(/\D/g, '');
-  return result.slice(0, CNPJ_LENGTH);
+  return value.replace(/\D/g, '').slice(0, CNPJ_LENGTH);
 }
 
 function toggleError(message = null) {
@@ -38,10 +41,7 @@ function toggleError(message = null) {
 
 function displayLoading(show) {
   toggleElementVisibility('loadingMessage', show);
-
-  if (show) {
-    toggleError(); // Hide any existing error messages while loading
-  }
+  if (show) toggleError(); // Hide any existing error messages while loading
 }
 
 function toggleElementVisibility(elementId, show) {
@@ -55,12 +55,12 @@ async function searchCNPJ() {
   const cnpjInput = document.getElementById('cnpjInput');
   const cnpj = cnpjInput.value.trim();
 
-  if (cnpj.length !== CNPJ_LENGTH) {
+  if (!isCNPJValid(cnpj)) {
     toggleError('O CNPJ deve conter 14 dígitos.');
     return;
   }
 
-  if (document.getElementById('results').style.display === 'block') {
+  if (isResultsVisible()) {
     setPlaneFields();
   }
 
@@ -78,7 +78,15 @@ async function searchCNPJ() {
     displayLoading(false);
   }
 
-  cnpjInput.value = '';
+  clearCNPJInput(cnpjInput);
+}
+
+function isCNPJValid(cnpj) {
+  return cnpj.length === CNPJ_LENGTH;
+}
+
+function isResultsVisible() {
+  return document.getElementById('results').style.display === 'block';
 }
 
 async function fetchCNPJData(cnpj) {
@@ -127,21 +135,10 @@ function formatAddress(data) {
 
 function formatPhoneNumber(phoneNumber) {
   let x = phoneNumber.replace(/\D/g, '');
-
-  if (x.length > 11) {
-    x = x.slice(0, 11); // Limit to 11 digits
-  }
-
-  if (x.length > 2) {
-    x = x.replace(/^(\d{2})(\d)/, '($1) $2'); // Format the area code
-  }
-
-  if (x.length > 6) {
-    x = x.replace(/(\d{4})(\d{4})$/, '$1-$2'); // Format as 8-digit number (XXXX-XXXX)
-  } else if (x.length > 7) {
-    x = x.replace(/(\d{5})(\d{4})$/, '$1-$2'); // Format as 9-digit number (XXXXX-XXXX)
-  }
-
+  if (x.length > 11) x = x.slice(0, 11);
+  if (x.length > 2) x = x.replace(/^(\d{2})(\d)/, '($1) $2');
+  if (x.length > 6) x = x.replace(/(\d{4})(\d{4})$/, '$1-$2');
+  else if (x.length > 7) x = x.replace(/(\d{5})(\d{4})$/, '$1-$2');
   return x;
 }
 
@@ -166,32 +163,15 @@ function makeFieldsEditable(spans) {
   const companyNameInputContainer = document.createElement('p');
   companyNameInputContainer.className = 'card-text';
   companyNameInputContainer.innerHTML = `
-  <strong>Nome:</strong>
-  <input type="text" class="form-control" id="companyName" value="${companyNameText}" style="width: 100%; margin-top: 5px;">`;
+    <strong>Nome:</strong>
+    <input type="text" class="form-control" id="companyName" value="${companyNameText}" style="width: 100%; margin-top: 5px;">`;
 
   companyNameElement.parentElement.replaceChild(companyNameInputContainer, companyNameElement);
 
   spans.forEach(span => {
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'form-control';
-    input.value = span.textContent;
-    input.style.width = '100%';
-    input.style.marginTop = '5px';
-    input.id = span.id;
-
+    const input = createEditableInput(span);
     if (span.id === 'companyAddress') {
-      const [logradouro, numero, bairro, municipioUf, cep] = span.textContent.split(', ');
-      const [municipio, uf] = municipioUf.split(' - ');
-
-      span.parentElement.innerHTML = `
-        <p class="card-text"><strong>Logradouro:</strong> <input type="text" class="form-control" id="companyLogradouro" value="${logradouro}" style="width: 100%; margin-top: 5px;"></p>
-        <p class="card-text"><strong>Número:</strong> <input type="text" class="form-control" id="companyNumero" value="${numero}" style="width: 100%; margin-top: 5px;"></p>
-        <p class="card-text"><strong>Bairro:</strong> <input type="text" class="form-control" id="companyBairro" value="${bairro}" style="width: 100%; margin-top: 5px;"></p>
-        <p class="card-text"><strong>Município:</strong> <input type="text" class="form-control" id="companyMunicipio" value="${municipio}" style="width: 100%; margin-top: 5px;"></p>
-        <p class="card-text"><strong>UF:</strong> <input type="text" class="form-control" id="companyUf" value="${uf}" style="width: 100%; margin-top: 5px;"></p>
-        <p class="card-text"><strong>CEP:</strong> <input type="text" class="form-control" id="companyCep" value="${cep}" style="width: 100%; margin-top: 5px;"></p>
-      `;
+      handleAddressInput(span, input);
     } else {
       span.replaceWith(input);
     }
@@ -203,14 +183,38 @@ function makeFieldsEditable(spans) {
   toggleElementVisibility('submitButton', true);
 }
 
+function createEditableInput(span) {
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'form-control';
+  input.value = span.textContent;
+  input.style.width = '100%';
+  input.style.marginTop = '5px';
+  input.id = span.id;
+  return input;
+}
+
+function handleAddressInput(span, input) {
+  const [logradouro, numero, bairro, municipioUf, cep] = span.textContent.split(', ');
+  const [municipio, uf] = municipioUf.split(' - ');
+
+  span.parentElement.innerHTML = `
+    <p class="card-text"><strong>Logradouro:</strong> <input type="text" class="form-control" id="companyLogradouro" value="${logradouro}" style="width: 100%; margin-top: 5px;"></p>
+    <p class="card-text"><strong>Número:</strong> <input type="text" class="form-control" id="companyNumero" value="${numero}" style="width: 100%; margin-top: 5px;"></p>
+    <p class="card-text"><strong>Bairro:</strong> <input type="text" class="form-control" id="companyBairro" value="${bairro}" style="width: 100%; margin-top: 5px;"></p>
+    <p class="card-text"><strong>Município:</strong> <input type="text" class="form-control" id="companyMunicipio" value="${municipio}" style="width: 100%; margin-top: 5px;"></p>
+    <p class="card-text"><strong>UF:</strong> <input type="text" class="form-control" id="companyUf" value="${uf}" style="width: 100%; margin-top: 5px;"></p>
+    <p class="card-text"><strong>CEP:</strong> <input type="text" class="form-control" id="companyCep" value="${cep}" style="width: 100%; margin-top: 5px;"></p>
+  `;
+}
+
 function setPlaneFields() {
   convertInputsToSpans();
 }
 
 function initiatePhoneListener() {
-  document.getElementById('companyPhone').addEventListener('input', function(e) {
-    const formattedPhone = formatPhoneNumber(e.target.value);
-    e.target.value = formattedPhone;
+  document.getElementById('companyPhone').addEventListener('input', function (e) {
+    e.target.value = formatPhoneNumber(e.target.value);
   });
 }
 
@@ -249,11 +253,9 @@ function extractFormData(inputs) {
 
   inputs.forEach(input => {
     let value = input.value;
-
     if (input.id === 'companyPhone') {
       value = value.replace(/\D/g, '');
     }
-
     formData[input.id] = value;
   });
 
@@ -275,7 +277,6 @@ function updateAddressElement(parent, address) {
   const newAddressElement = document.createElement('p');
   newAddressElement.className = 'card-text';
   newAddressElement.innerHTML = `<strong>Endereço Completo:</strong> <span id="companyAddress">${address}</span>`;
-
   parent.appendChild(newAddressElement);
 }
 
@@ -295,6 +296,10 @@ function replaceInputsWithSpans(inputs, data) {
       input.replaceWith(span);
     }
   });
+}
+
+function clearCNPJInput(cnpjInput) {
+  cnpjInput.value = '';
 }
 
 function initializeEventListeners() {
