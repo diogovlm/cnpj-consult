@@ -10,12 +10,18 @@ function handleCNPJInput() {
   });
 }
 
-function searchCNPJ() {
+function displayError(message) {
+  const errorMessage = document.getElementById('errorMessage');
+  errorMessage.textContent = message;
+  errorMessage.style.display = 'block';
+}
+
+async function searchCNPJ() {
   const cnpjInput = document.getElementById('cnpjInput');
   const cnpj = cnpjInput.value.trim();
 
   if (cnpj.length !== 14) {
-    alert('O CNPJ deve conter 14 dígitos.');
+    displayError('O CNPJ deve conter 14 dígitos.');
     return;
   }
 
@@ -23,42 +29,62 @@ function searchCNPJ() {
     setPlaneFields();
   }
 
-  fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Erro na consulta do CNPJ');
-      }
-      return response.json();
-    })
-    .then(data => {
-      populateCompanyDetails(data);
-      displayPartners(data.qsa);
-      document.getElementById('results').style.display = 'block';
-    })
-    .catch(error => {
-      console.error('Erro:', error);
-      alert('Erro ao buscar os dados do CNPJ. Por favor, tente novamente.');
-    });
+  try {
+    const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Erro na consulta do CNPJ');
+    }
+    const data = await response.json();
+    populateCompanyDetails(data);
+    displayPartners(data.qsa);
+    document.getElementById('results').style.display = 'block';
+    errorMessage.style.display = 'none'; // Hide error message on success
+  } catch (error) {
+    displayError(error.message);
+  }
 
   cnpjInput.value = '';
 }
 
 function populateCompanyDetails(data) {
-  document.getElementById('companyName').textContent = data.nome_fantasia || "Nome Fantasia não disponível";
-  document.getElementById('companyLegalName').textContent = data.razao_social;
-  document.getElementById('companyOpeningDate').textContent = data.data_inicio_atividade;
-  document.getElementById('companyStatus').textContent = data.descricao_situacao_cadastral;
-  document.getElementById('companyActivity').textContent = data.cnae_fiscal_descricao;
-  document.getElementById('companyAddress').textContent = `${data.logradouro}, ${data.numero}, ${data.bairro}, ${data.municipio} - ${data.uf}, ${data.cep}`;
+  setContent('companyName', data.nome_fantasia || "Nome Fantasia não disponível");
+  setContent('companyLegalName', data.razao_social);
+  setContent('companyOpeningDate', data.data_inicio_atividade);
+  setContent('companyStatus', data.descricao_situacao_cadastral);
+  setContent('companyActivity', data.cnae_fiscal_descricao);
+  setContent('companyAddress', data, formatAddress);
+  setContent('companyPhone', data.ddd_telefone_1 || "Telefone não disponível", formatPhoneNumber);
+  setContent('companyEmail', data.email || "E-mail não disponível");
+}
 
-  const phoneElement = document.getElementById('companyPhone');
-  phoneElement.textContent = data.ddd_telefone_1 || "Telefone não disponível";
+function setContent(elementId, content, formatter = null) {
+  const element = document.getElementById(elementId);
+  element.textContent = formatter ? formatter(content) : content;
+}
 
-  if (phoneElement.textContent !== "Telefone não disponível") {
-    formatPhoneNumber({ target: phoneElement });
+function formatAddress(data) {
+  return `${data.logradouro}, ${data.numero}, ${data.bairro}, ${data.municipio} - ${data.uf}, ${data.cep}`;
+}
+
+function formatPhoneNumber(phoneNumber) {
+  let x = phoneNumber.replace(/\D/g, '');
+
+  if (x.length > 11) {
+    x = x.slice(0, 11); // Limit to 11 digits
   }
 
-  document.getElementById('companyEmail').textContent = data.email || "E-mail não disponível";
+  if (x.length > 2) {
+    x = x.replace(/^(\d{2})(\d)/, '($1) $2'); // Format the area code
+  }
+
+  if (x.length > 6) {
+    x = x.replace(/(\d{4})(\d{4})$/, '$1-$2'); // Format as 8-digit number (XXXX-XXXX)
+  } else if (x.length > 7) {
+    x = x.replace(/(\d{5})(\d{4})$/, '$1-$2'); // Format as 9-digit number (XXXXX-XXXX)
+  }
+
+  return x;
 }
 
 function displayPartners(partners) {
@@ -82,7 +108,9 @@ function makeFieldsEditable(spans) {
 
   const companyNameInputContainer = document.createElement('p');
   companyNameInputContainer.className = 'card-text';
-  companyNameInputContainer.innerHTML = `<strong>Nome:</strong> <input type="text" class="form-control" id="companyName" value="${companyNameText}" style="width: 100%; margin-top: 5px;">`;
+  companyNameInputContainer.innerHTML = `
+  <strong>Nome:</strong>
+  <input type="text" class="form-control" id="companyName" value="${companyNameText}" style="width: 100%; margin-top: 5px;">`;
 
   companyNameElement.parentElement.replaceChild(companyNameInputContainer, companyNameElement);
 
@@ -147,52 +175,35 @@ function setPlaneFields() {
 
 function initiatePhoneListener() {
   document.getElementById('companyPhone').addEventListener('input', function(e) {
-    formatPhoneNumber(e);
+    const formattedPhone = formatPhoneNumber(e.target.value);
+    e.target.value = formattedPhone;
   });
 }
 
-function formatPhoneNumber(e) {
-  let x;
-  const isAnInput = e.target.tagName === 'INPUT';
+function handleSubmitButton() {
+  const inputs = document.querySelectorAll('#results input');
+  const editedData = extractFormData(inputs);
 
-  isAnInput ? x = e.target.value.replace(/\D/g, '') : x = e.target.textContent.replace(/\D/g, ''); // Clear the string to only numbers
+  // For now, it is a simple console.log to show the updated data because there isn't an endpoint to send the editedData
+  console.log(editedData);
 
-  if (x.length > 11) {
-    x = x.slice(0, 11); // Limit to 11 digits
+  const addressParent = document.querySelector('#companyLogradouro')?.closest('.card-text')?.parentElement;
+
+  if (addressParent) {
+    removeAddressInputs();
+    updateAddressElement(addressParent, editedData.companyAddress);
+  } else {
+    console.error('Address parent container not found. Cannot replace address fields.');
   }
 
-  if (x.length > 2) {
-    x = x.replace(/^(\d{2})(\d)/, '($1) $2'); // Format the area code
-  }
+  replaceInputsWithSpans(inputs, editedData);
 
-  if (x.length > 6) {
-    x = x.replace(/(\d{4})(\d{4})$/, '$1-$2'); // Format as 8-digit number (XXXX-XXXX)
-  } else if (x.length > 7) {
-    x = x.replace(/(\d{5})(\d{4})$/, '$1-$2'); // Format as 9-digit number (XXXXX-XXXX)
-  }
-
-  isAnInput ? e.target.value = x : e.target.textContent = x;
+  document.getElementById('submitButton').style.display = 'none';
+  document.getElementById('editButton').style.display = 'block';
 }
 
-function handleSubmitButton() {
-  const resultsDiv = document.getElementById('results');
-  const inputs = resultsDiv.querySelectorAll('input');
-
-  const editedData = {
-    companyName: '',
-    companyLegalName: '',
-    companyOpeningDate: '',
-    companyStatus: '',
-    companyActivity: '',
-    companyLogradouro: '',
-    companyNumero: '',
-    companyBairro: '',
-    companyMunicipio: '',
-    companyUf: '',
-    companyCep: '',
-    companyPhone: '',
-    companyEmail: ''
-  };
+function extractFormData(inputs) {
+  let formData = {};
 
   inputs.forEach(input => {
     let value = input.value;
@@ -201,96 +212,48 @@ function handleSubmitButton() {
       value = value.replace(/\D/g, '');
     }
 
-    switch (input.id) {
-      case 'companyName':
-        editedData.companyName = value;
-        break;
-      case 'companyLegalName':
-        editedData.companyLegalName = value;
-        break;
-      case 'companyOpeningDate':
-        editedData.companyOpeningDate = value;
-        break;
-      case 'companyStatus':
-        editedData.companyStatus = value;
-        break;
-      case 'companyActivity':
-        editedData.companyActivity = value;
-        break;
-      case 'companyLogradouro':
-        editedData.companyLogradouro = value;
-        break;
-      case 'companyNumero':
-        editedData.companyNumero = value;
-        break;
-      case 'companyBairro':
-        editedData.companyBairro = value;
-        break;
-      case 'companyMunicipio':
-        editedData.companyMunicipio = value;
-        break;
-      case 'companyUf':
-        editedData.companyUf = value;
-        break;
-      case 'companyCep':
-        editedData.companyCep = value;
-        break;
-      case 'companyPhone':
-        editedData.companyPhone = value;
-        break;
-      case 'companyEmail':
-        editedData.companyEmail = value;
-        break;
-    }
+    formData[input.id] = value;
   });
 
-  console.log(editedData);
+  formData.companyAddress = `${formData.companyLogradouro}, ${formData.companyNumero}, ${formData.companyBairro}, ${formData.companyMunicipio} - ${formData.companyUf}, ${formData.companyCep}`;
 
-  editedData.companyAddress = `${editedData.companyLogradouro}, ${editedData.companyNumero}, ${editedData.companyBairro}, ${editedData.companyMunicipio} - ${editedData.companyUf}, ${editedData.companyCep}`;
+  return formData;
+}
 
-  const addressParent = document.querySelector('#companyLogradouro')?.closest('.card-text')?.parentElement;
+function removeAddressInputs() {
+  ['companyLogradouro', 'companyNumero', 'companyBairro', 'companyMunicipio', 'companyUf', 'companyCep'].forEach(id => {
+    const input = document.getElementById(id);
+    if (input) {
+      input.parentElement.remove();
+    }
+  });
+}
+
+function updateAddressElement(parent, address) {
+  const newAddressElement = document.createElement('p');
+  newAddressElement.className = 'card-text';
+  newAddressElement.innerHTML = `<strong>Endereço Completo:</strong> <span id="companyAddress">${address}</span>`;
   
-  if (addressParent) {
-    ['companyLogradouro', 'companyNumero', 'companyBairro', 'companyMunicipio', 'companyUf', 'companyCep'].forEach(id => {
-      const input = document.getElementById(id);
-      if (input) {
-        input.parentElement.remove();
-      }
-    });
+  parent.appendChild(newAddressElement);
+}
 
-    const newAddressElement = document.createElement('p');
-    newAddressElement.className = 'card-text';
-    newAddressElement.innerHTML = `<strong>Endereço Completo:</strong> <span id="companyAddress">${editedData.companyAddress}</span>`;
-    
-    addressParent.appendChild(newAddressElement);
-  } else {
-    console.error('Address parent container not found. Cannot replace address fields.');
-  }
-
+function replaceInputsWithSpans(inputs, data) {
   inputs.forEach(input => {
+    const span = document.createElement('span');
+    span.textContent = input.id === 'companyPhone' ? formatPhoneNumber(input.value) : input.value;
+    span.id = input.id;
+
     if (input.id === 'companyName') {
       const companyNameElement = document.createElement('h2');
       companyNameElement.className = 'card-title';
       companyNameElement.id = 'companyName';
-      companyNameElement.textContent = editedData.companyName;
-
+      companyNameElement.textContent = data.companyName;
       input.parentElement.replaceWith(companyNameElement);
-    } else if (!input.id.startsWith('companyLogradouro') && !input.id.startsWith('companyNumero') &&
-               !input.id.startsWith('companyBairro') && !input.id.startsWith('companyMunicipio') &&
-               !input.id.startsWith('companyUf') && !input.id.startsWith('companyCep')) {
-      const span = document.createElement('span');
-      span.textContent = input.value;
-      span.id = input.id;
-
+    } else {
       input.replaceWith(span);
     }
   });
-
-  document.getElementById('submitButton').style.display = 'none';
-  document.getElementById('editButton').style.display = 'block';
 }
-
-
 
 function initializeEventListeners() {
   handleCNPJInput();
