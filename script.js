@@ -61,7 +61,6 @@ function populateCompanyDetails(data) {
   document.getElementById('companyEmail').textContent = data.email || "E-mail não disponível";
 }
 
-
 function displayPartners(partners) {
   const partnersContainer = document.getElementById('partners-container');
   partnersContainer.innerHTML = '';
@@ -96,7 +95,21 @@ function makeFieldsEditable(spans) {
     input.style.marginTop = '5px';
     input.id = span.id;
 
-    span.replaceWith(input);
+    if (span.id === 'companyAddress') {
+      const [logradouro, numero, bairro, municipioUf, cep] = span.textContent.split(', ');
+      const [municipio, state] = municipioUf.split(' - ');
+
+      span.parentElement.innerHTML = `
+        <p class="card-text"><strong>Logradouro:</strong> <input type="text" class="form-control" id="companyLogradouro" value="${logradouro}" style="width: 100%; margin-top: 5px;"></p>
+        <p class="card-text"><strong>Número:</strong> <input type="text" class="form-control" id="companyNumero" value="${numero}" style="width: 100%; margin-top: 5px;"></p>
+        <p class="card-text"><strong>Bairro:</strong> <input type="text" class="form-control" id="companyBairro" value="${bairro}" style="width: 100%; margin-top: 5px;"></p>
+        <p class="card-text"><strong>Município:</strong> <input type="text" class="form-control" id="companyMunicipio" value="${municipio}" style="width: 100%; margin-top: 5px;"></p>
+        <p class="card-text"><strong>UF:</strong> <input type="text" class="form-control" id="companyUf" value="${state}" style="width: 100%; margin-top: 5px;"></p>
+        <p class="card-text"><strong>CEP:</strong> <input type="text" class="form-control" id="companyCep" value="${cep}" style="width: 100%; margin-top: 5px;"></p>
+      `;
+    } else {
+      span.replaceWith(input);
+    }
   });
 
   initiatePhoneListener();
@@ -122,6 +135,7 @@ function setPlaneFields() {
         const span = document.createElement('span');
         span.textContent = input.value;
         span.id = input.id;
+
         input.replaceWith(span);
       }
     });
@@ -133,15 +147,15 @@ function setPlaneFields() {
 
 function initiatePhoneListener() {
   document.getElementById('companyPhone').addEventListener('input', function(e) {
-    formatPhoneNumber(e)
+    formatPhoneNumber(e);
   });
 }
 
 function formatPhoneNumber(e) {
   let x;
-  const isAnInput = e.target.tagName === 'INPUT'
+  const isAnInput = e.target.tagName === 'INPUT';
 
-  isAnInput ? x = e.target.value.replace(/\D/g, '') : x = e.target.textContent.replace(/\D/g, '') // Clear the string to only numbers
+  isAnInput ? x = e.target.value.replace(/\D/g, '') : x = e.target.textContent.replace(/\D/g, ''); // Clear the string to only numbers
 
   if (x.length > 11) {
     x = x.slice(0, 11); // Limit to 11 digits
@@ -153,13 +167,11 @@ function formatPhoneNumber(e) {
 
   if (x.length > 6) {
     x = x.replace(/(\d{4})(\d{4})$/, '$1-$2'); // Format as 8-digit number (XXXX-XXXX)
-  }
-
-  else if (x.length > 7) {
+  } else if (x.length > 7) {
     x = x.replace(/(\d{5})(\d{4})$/, '$1-$2'); // Format as 9-digit number (XXXXX-XXXX)
   }
 
-  isAnInput ? e.target.value = x : e.target.textContent = x
+  isAnInput ? e.target.value = x : e.target.textContent = x;
 }
 
 function handleSubmitButton() {
@@ -172,7 +184,12 @@ function handleSubmitButton() {
     companyOpeningDate: '',
     companyStatus: '',
     companyActivity: '',
-    companyAddress: '',
+    companyLogradouro: '',
+    companyNumero: '',
+    companyBairro: '',
+    companyMunicipio: '',
+    companyUf: '',
+    companyCep: '',
     companyPhone: '',
     companyEmail: ''
   };
@@ -200,8 +217,23 @@ function handleSubmitButton() {
       case 'companyActivity':
         editedData.companyActivity = value;
         break;
-      case 'companyAddress':
-        editedData.companyAddress = value;
+      case 'companyLogradouro':
+        editedData.companyLogradouro = value;
+        break;
+      case 'companyNumero':
+        editedData.companyNumero = value;
+        break;
+      case 'companyBairro':
+        editedData.companyBairro = value;
+        break;
+      case 'companyMunicipio':
+        editedData.companyMunicipio = value;
+        break;
+      case 'companyUf':
+        editedData.companyUf = value;
+        break;
+      case 'companyCep':
+        editedData.companyCep = value;
         break;
       case 'companyPhone':
         editedData.companyPhone = value;
@@ -211,10 +243,54 @@ function handleSubmitButton() {
         break;
     }
   });
-  
+
   console.log(editedData);
-  setPlaneFields();
+
+  editedData.companyAddress = `${editedData.companyLogradouro}, ${editedData.companyNumero}, ${editedData.companyBairro}, ${editedData.companyMunicipio} - ${editedData.companyUf}, ${editedData.companyCep}`;
+
+  const addressParent = document.querySelector('#companyLogradouro')?.closest('.card-text')?.parentElement;
+  
+  if (addressParent) {
+    ['companyLogradouro', 'companyNumero', 'companyBairro', 'companyMunicipio', 'companyUf', 'companyCep'].forEach(id => {
+      const input = document.getElementById(id);
+      if (input) {
+        input.parentElement.remove();
+      }
+    });
+
+    const newAddressElement = document.createElement('p');
+    newAddressElement.className = 'card-text';
+    newAddressElement.innerHTML = `<strong>Endereço Completo:</strong> <span id="companyAddress">${editedData.companyAddress}</span>`;
+    
+    addressParent.appendChild(newAddressElement);
+  } else {
+    console.error('Address parent container not found. Cannot replace address fields.');
+  }
+
+  inputs.forEach(input => {
+    if (input.id === 'companyName') {
+      const companyNameElement = document.createElement('h2');
+      companyNameElement.className = 'card-title';
+      companyNameElement.id = 'companyName';
+      companyNameElement.textContent = editedData.companyName;
+
+      input.parentElement.replaceWith(companyNameElement);
+    } else if (!input.id.startsWith('companyLogradouro') && !input.id.startsWith('companyNumero') &&
+               !input.id.startsWith('companyBairro') && !input.id.startsWith('companyMunicipio') &&
+               !input.id.startsWith('companyUf') && !input.id.startsWith('companyCep')) {
+      const span = document.createElement('span');
+      span.textContent = input.value;
+      span.id = input.id;
+
+      input.replaceWith(span);
+    }
+  });
+
+  document.getElementById('submitButton').style.display = 'none';
+  document.getElementById('editButton').style.display = 'block';
 }
+
+
 
 function initializeEventListeners() {
   handleCNPJInput();
