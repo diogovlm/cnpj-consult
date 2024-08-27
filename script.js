@@ -2,31 +2,29 @@ import { createPartnerCard } from './components/partnerCard/partnerCard.js';
 
 function handleCNPJInput() {
   const cnpjInput = document.getElementById('cnpjInput');
+  
   cnpjInput.addEventListener('input', function () {
-    let cleanValue = this.value.replace(/\D/g, '');
-
-    if (cleanValue.length > 14) {
-      cleanValue = cleanValue.slice(0, 14);
-    }
-
-    this.value = cleanValue;
+    this.value = limitCNPJInput(this.value)
   });
 
   cnpjInput.addEventListener('paste', function (event) {
     event.preventDefault();
     let pastedData = (event.clipboardData || window.clipboardData).getData('Text');
-
-    pastedData = pastedData.replace(/\D/g, '');
-
-    this.value = pastedData.slice(0, 14);
+    this.value = limitCNPJInput(pastedData)
   });
 
   cnpjInput.addEventListener('keypress', function (event) {
     if (event.key === 'Enter') {
-      event.preventDefault(); 
+      event.preventDefault();
       searchCNPJ();
     }
   });
+}
+
+function limitCNPJInput(value) {
+  let result = value.replace(/\D/g, '');
+  result = result.slice(0, 14);
+  return result
 }
 
 
@@ -75,7 +73,7 @@ async function searchCNPJ() {
     populateCompanyDetails(data);
     displayPartners(data.qsa);
     document.getElementById('results').style.display = 'block';
-    errorMessage.style.display = 'none'; // Hide error message on success
+    hideError();
   } catch (error) {
     displayError(error.message);
   } finally {
