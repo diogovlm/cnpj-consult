@@ -128,7 +128,7 @@ async function searchCNPJ() {
   }
 
   if (isResultsVisible()) {
-    setPlaneFields();
+    convertInputsToSpans();
   }
 
   displayLoading(true);
